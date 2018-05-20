@@ -1,12 +1,4 @@
-%Juste pour supprimer les les variables déja utilsié:     
-%------------------------------------------------
-
-	clearvars tableStructure tablePerfermance tableRegression tableStrucInfo tableTrainFunction layerTable layerTableString layerTableString  tableTransferFunction 
-	clearvars  perf  regres  net netWorkTrainFunction numberOfLayer outPut  retrainNBR  sommeOfPerf sommeOfRegression bestPerf file1Couche file2Couche file3Couche
-	clearvars column line  cptTrain  e  iTransfer   layerNbr  tr trainFcn matrixUsed   tranferFnc ans retrainN matrixthreeLayer matrixOneLayer matrixTwoLayer
-	clearvars input inputRange targetRange target mat nbrRetrain tRegress tStruct tPerferm tTrain tabx ax file  
-
-%************************************************************ variables : *********************************************************************
+***************************
 % le nombre de re-apprentissage 
 nbrRetrain = 3 ;
 
@@ -38,156 +30,127 @@ matrixthreeLayer    = csvread(file3Couche, 0, 0);
 
 %Tables de statistique:
 tableStrucInfo = {'Perfermence';'Regression';'configuration';'fonction de transfer';'fonction activation'};
-%*******************************************************************************************************************************************
+%***********************************************************************************************************
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%% 1 er   boucle  pour changer la fonction d'appretissage %%%%%%%%%%%%%%%%%%%%%%%%%
 for netWorkTrainFunction=1:5 % Different Training   ---------------------------------------------------- 1      
 
-			% cette variable juste pour récupérer la fonction d'apprentissage chaque itération (boucle)
-			trainFcn=''; 
+	% cette variable juste pour récupérer la fonction d'apprentissage chaque itération (boucle)
+	trainFcn=''; 
+		
+ 		% pour choisir la fonction de training
+			switch netWorkTrainFunction
+					    case 1 
+					        trainFcn = 'trainlm';
+					    case 2
+					        trainFcn = 'trainrp';
+					    case 3 
+					        trainFcn = 'trainbr';
+					    case 4
+					        trainFcn = 'trainscg';
+					    case 5
+					        trainFcn = 'trainr';   
+			end % fin de switch
 		
 
-		 
-		 		% pour choisir la fonction de training
-					switch netWorkTrainFunction
-						    case 1 
-						        trainFcn = 'trainlm';
-						    case 2
-						        trainFcn = 'trainrp';
-						    case 3 
-						        trainFcn = 'trainbr';
-						    case 4
-						        trainFcn = 'trainscg';
-						    case 5
-						        trainFcn = 'trainr';   
-					end % fin de switch
-		
 
-
-		    %%%%%%%%%%%%%%%%%%%%%%%%%  2 em   boucle  pour le choix de la fonction d'activation %%%%%%%%%%%%%%%%%%%%%%%%%
-			for iTransfer = 1:3 % tranfer Function  ---------------------------------------------------------------------------------------------------------------3
+	%%%%%%%%%%%%%%%%%%%%%%%%%  2 em   boucle  pour le choix de la fonction d'activation %%%%%%%%%%%%%%%%%%%%%%%%%
+	for iTransfer = 1:3 % tranfer Function  ---------------------------------------------------------------------3
 	
 
-					switch iTransfer %---------------------------
-						case 1   								%
-									tranferFnc = 'logsig';		%	
-						case 2   								%
-							 		tranferFnc = 'tansig';		%
-					 	case 3   								%	
-							 		tranferFnc = 'purelin';		%
-					 											%
-				     end %---------------------------------------
+		switch iTransfer %---------------------------
+				case 1   								%
+						tranferFnc = 'logsig';		%	
+				case 2   								%
+				 		tranferFnc = 'tansig';		%
+			 	case 3   								%	
+				 		tranferFnc = 'purelin';		%
+		 											%
+	        end %---------------------------------------
 
 					
-					for numberOfLayer = 1:3  % combien de couche pour chaque test sur chaque fonction choisi ---------------------------------------------------- 2
+		for numberOfLayer = 1:3  % combien de couche pour chaque test sur chaque fonction choisi ------------- 2
+							%vider le tableau de layers 
+							clearvars layerTable
+							% pour creer un tableau de i case 
+							% chaque case represente une couche caché 
+							% chaque couche caché contient un nombre de neurones 
 							
-
-									%vider le tableau de layers 
-									clearvars layerTable
-
-									% pour creer un tableau de i case 
-									% chaque case represente une couche caché 
-									% chaque couche caché contient un nombre de neurones 
-
-
-
-									%layerTable(i)= (numberOfLayer-i+1)*5
-									
-									 switch numberOfLayer %------------------------
-										 	case 1   								%
-										 		matrixUsed = matrixOneLayer;		%	
-											case 2   								%
-										 		matrixUsed = matrixTwoLayer;		%
-										 	case 3   								%	
-										 		matrixUsed = matrixthreeLayer;		%
-										 											%
-									 end %-------------------------------------------	
-
-									 [line,column] = size(matrixUsed);
+							%layerTable(i)= (numberOfLayer-i+1)*5								
+							 switch numberOfLayer %--------------------------
+							 	case 1       					%
+									matrixUsed = matrixOneLayer;		%	
+								case 2   					%
+							 		matrixUsed = matrixTwoLayer;		%
+								case 3 						%	
+							 		matrixUsed = matrixthreeLayer;		%
+														%
+							 end %---------------------------------------------------	
+							 
+							 [line,column] = size(matrixUsed);
 	
+           for mat = 1 : line  %----------------- pour chaque configuration de notre réseau (par exemple (net(25,10,10))) ----- 4 	
+								%layerTable : c'est un tableau qui contient l'architecture utilisé 
+								layerTable  = matrixUsed(mat,:);
+								% create the neural network now , using the table of layers 
+								%------------------------------------
+								clearvars mSlope bOffset regression     %
+								% our network 				%
+								net = feedforwardnet(layerTable) ;	%
+								net = configure(net,input,target);	%
+				 				%---------------------------------------%
+								%affectation d'une fonction d'apprentissage a notre reseau :
+								net.trainFcn = trainFcn;
+	
+								% ASSIGN  THE TRANSFER FUNCTION  ---------------------------%
+								%		    					    %				
+								for layerNbr = 1:column 				    %
+								net.layers{layerNbr}.transferFcn = tranferFnc ;		    %
+								end % ------------------------------------------------------% 	
+										
+								sommeOfPerf = 0 ;
+								sommeOfRegression = 0;
+										
 
+					 for retrainN = 1:nbrRetrain %***********************************************RETRAIN***********************************
 
-
-									  for mat = 1 : line  %--------------------------------------- pour chaque configuration de notre réseau (par exemple (net(25,10,10))) ----- 4
-									 	
-									 			%layerTable : c'est un tableau qui contient l'architecture utilisé 
-									 			layerTable  = matrixUsed(mat,:);
-
-
-
-									 				% create the neural network now , using the table of layers 
-
-													%------------------------------------
-													clearvars mSlope bOffset regression %
-													% our network 						%
-													net = feedforwardnet(layerTable) ;	%
-													net = configure(net,input,target);	%
-													 									%
-																						%
-													%-------------------------------------
-
-												%affectation d'une fonction d'apprentissage a notre reseau :
-												net.trainFcn = trainFcn;
-
-
-												% ASSIGN  THE TRANSFER FUNCTION  -------------------------------%
-												%																%				
-													for layerNbr = 1:column 									%
-															net.layers{layerNbr}.transferFcn = tranferFnc ;		%
-													end % ------------------------------------------------------% 	
-													
-													sommeOfPerf = 0 ;
-													sommeOfRegression = 0;
-													
-
-													for retrainN = 1:nbrRetrain %***************RETRAIN***********************************
-			
-																% reinitialisé les poids 			
-																net = init(net);
+						% reinitialisé les poids 			
+						net = init(net);
 																
-																% do training 
-																[net,tr] = train(net,input,target);
+						% do training 
+						[net,tr] = train(net,input,target);
+
+						outPut = net(input) ;  
+						
+						%e = gsubtract(target,outPut);      
+						perf=perform(net,outPut,target);
+  						%aprés avoir le outPut , on peut calculer la régression 
+						[regression,mSlope,bOffset]  = regression(target,outPut);
+
+						regres = regression(1);
+					        sommeOfPerf = sommeOfPerf+perf;							
+						sommeOfRegression =sommeOfRegression+regres;
+						clearvars mSlope bOffset regression;		
+						end	%*****************************************************************************					 
+						perf = sommeOfPerf / nbrRetrain ;
+						regres = sommeOfRegression /nbrRetrain ;
+
+						%pour recuperer l architecture de network 
+						layerTableString=''; 
+						
+						%Sauvgarder les resultat %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+						tablePerfermance(cptTrain)= perf;
+						tableRegression(cptTrain)=regres;
+						tableStructure.newVar(cptTrain)= {int2str(layerTable)};
+						tableTransferFunction.newVar(cptTrain)={tranferFnc};
+						tableTrainFunction.newVar(cptTrain)={trainFcn};
+						cptTrain = cptTrain+1;
+						%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
 
 
-																outPut = net(input) ;   
-
-																%e = gsubtract(target,outPut);      
-																perf=perform(net,outPut,target);
-
-																%aprés avoir le outPut , on peut calculer la régression 
-																[regression,mSlope,bOffset]  = regression(target,outPut);
-
-																 regres = regression(1);
-																 %regres = 0;
-																
-																		sommeOfPerf = sommeOfPerf+perf;
-																		
-																		sommeOfRegression =sommeOfRegression+regres;
-																		clearvars mSlope bOffset regression;		
-
-													end	%*****************************************************************************
-												 
-												perf = sommeOfPerf / nbrRetrain ;
-												regres = sommeOfRegression /nbrRetrain ;
-
-												%pour recuperer l architecture de network 
-												layerTableString=''; 
-
-
-												%Sauvgarder les resultat %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-												tablePerfermance(cptTrain)= perf;
-												tableRegression(cptTrain)=regres;
-												tableStructure.newVar(cptTrain)= {int2str(layerTable)};
-												tableTransferFunction.newVar(cptTrain)={tranferFnc};
-												tableTrainFunction.newVar(cptTrain)={trainFcn};
-												cptTrain = cptTrain+1;
-
-												%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%	
-
-
-									 end	%-------------------------------------------------------------------------------------------------------------------------------fin 4
+					 end	%----------------------------------------------------------------------------------------------------------------fin 4
 														
 
 
@@ -241,3 +204,14 @@ ax = ax.tabx;
 
 
 %***********************************************************************************
+
+%Juste pour supprimer les les variables déja utilsié:     
+%------------------------------------------------
+
+	clearvars tableStructure tablePerfermance tableRegression tableStrucInfo tableTrainFunction 
+	clearvars layerTable layerTableString layerTableString  tableTransferFunction 
+	clearvars  perf  regres  net netWorkTrainFunction numberOfLayer outPut  retrainNBR  sommeOfPerf sommeOfRegression bestPerf file1Couche file2Couche file3Couche
+	clearvars column line  cptTrain  e  iTransfer   layerNbr  tr trainFcn matrixUsed   tranferFnc ans retrainN matrixthreeLayer matrixOneLayer matrixTwoLayer
+	clearvars input inputRange targetRange target mat nbrRetrain tRegress tStruct tPerferm tTrain tabx ax file  
+
+%************************************************************ variables : ******************************************
