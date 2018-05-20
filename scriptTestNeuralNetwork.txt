@@ -1,0 +1,13 @@
+
+ANnet= load ('G:\\AARN\\Projet\\trained_net_smote1.mat') 
+
+fileIn = 'G:\\AARN\\Projet\\tableInputTest.txt';
+
+inTable      = csvread(fileIn, 0, 0);
+
+layerTable  = inTable(1,:);
+
+y = layerTable';
+newoutput = ANnet.net(y)
+
+save('G:\AARN\Projet\DataSetCorrect\outPutTest\output.txt', 'newoutput', '-ASCII','-append') 
